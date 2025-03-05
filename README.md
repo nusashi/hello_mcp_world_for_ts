@@ -227,6 +227,10 @@ nodeの絶対パス指定の例：ご自身の環境に合わせてください�
 - [MCPプロジェクト](https://github.com/modelcontextprotocol)
 - [MCPリファレンス実装](https://github.com/modelcontextprotocol/typescript-sdk)
 
+## 参考記事
+
+- [Claude for Desktop（Windows版）でMCP（Filesystem）を使う！日本語で一番詳しい手順を解説](https://qiita.com/amatatsuk/items/4303f6bedd441c8a2588)
+
 ## 免責事項
 
 このプロジェクトは、以下の外部ライブラリを利用しています。
