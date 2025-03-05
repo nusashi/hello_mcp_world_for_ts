@@ -20,7 +20,7 @@ A: JSON-RPCは、JSONを使用したリモートプロシージャコール（RP
 ## 環境設定
 
 ### Q: プロジェクトの実行に必要な環境は？
-A: Node.js（v16以降推奨）とnpmが必要です。TypeScriptを理解するための基本的な知識も役立ちます。
+A: Node.js（v18以降推奨）とnpmが必要です。TypeScriptを理解するための基本的な知識も役立ちます。
 
 ### Q: `npm run start:server`と`npm run start:client`の違いは？
 A: `start:server`はMCPサーバーを起動します。`start:client`はMCPクライアントを起動し、サーバーに接続して通信を行います。クライアントはサーバーが起動していることを前提としています。
@@ -31,6 +31,42 @@ A: 次のことを確認してください：
 2. インターネット接続が正常か
 3. npm registryにアクセスできるか
 4. package.jsonが正しいか
+
+### Q: Windowsでchmodエラーが出る場合はどうすればいいですか？
+A: Windowsでは`chmod`コマンドがサポートされていないため、package.jsonのscriptsセクションから`chmod`を含むコマンドを削除してください。代わりに`"build": "tsc"`のように単純な形式を使用します。
+
+## SDK関連
+
+### Q: ServerとMcpServerの違いは何ですか？
+A: `Server`は低レベルのAPIを提供するMCPサーバークラスで、`McpServer`はそのラッパーとして動作する高レベルのAPIです。`McpServer`は内部で`Server`インスタンスを作成し、`server`プロパティとして公開しています。基本的な使用では`McpServer`を使用するほうが簡単です。
+
+### Q: SDKのバージョンによる違いはありますか？
+A: はい、バージョンによってAPIの構造や要件が異なる場合があります。例えば：
+- 1.0.1では`Server`クラスが直接使われていましたが、1.6.1では`McpServer`が推奨されています
+- インポートパスの構造も変わっています
+- capabilitiesの要件も変わっている可能性があります
+
+### Q: 正しいインポートパスはどのように指定すべきですか？
+A: SDKのバージョン1.6.1での正しいインポートパスは以下の通りです：
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+```
+拡張子`.js`を含めることが重要です。
+
+### Q: capabilitiesとは何ですか？また、どのように設定すべきですか？
+A: capabilitiesはサーバーがサポートする機能を定義します。最小限のサーバーでも、`resources`と`tools`の両方を含める必要があります：
+```typescript
+const server = new McpServer(
+    { name: "my-server", version: "1.0.0" },
+    {
+        capabilities: {
+            resources: {}, // 必須
+            tools: {},     // 必須
+        }
+    }
+);
+```
 
 ## 実装関連
 
@@ -48,6 +84,13 @@ A: Node.jsでは、`console.log`は標準出力（stdout）に、`console.error`
 
 ## エラー対応
 
+### Q: TypeScriptのモジュール解決エラーが発生した場合は？
+A: 以下の対策を試してください：
+1. インポートパスに`.js`拡張子を含める
+2. tsconfig.jsonの`moduleResolution`を`NodeNext`に設定
+3. 必要に応じて`skipLibCheck: true`を追加
+4. package.jsonの`type`フィールドを`module`に設定
+
 ### Q: 「Connection refused」エラーが発生する場合は？
 A: サーバーが起動していない、または別のポートで実行されている可能性があります。HTTPサーバーの場合は、指定されたポート（デフォルトは3000）が他のアプリケーションに使用されていないか確認してください。
 
@@ -63,6 +106,70 @@ A: 次のことを確認してください：
 2. 必要なimport文があるか
 3. tsconfig.jsonの設定が正しいか
 4. 特にnullやundefinedの可能性がある値を扱う場合、型チェックが厳密になっていないか
+
+## GitHub/NPXとの連携
+
+※ リモートでの公開を検討されている場合は、別途、パッケージの公開方法についてお調べいただくことをお勧めします。
+
+### Q: GitHubリポジトリからnpxで実行するには何が必要ですか？
+A: GitHubリポジトリからnpxでMCPサーバーを実行するには、適切なpackage.jsonとTypeScriptの設定が必要です。リポジトリがパブリックであること、依存関係が正しく設定されていることを確認してください。
+
+### Q: npxコマンドを使ったMCPサーバーの実行例は？
+A: ビルド済みのパッケージをnpmレジストリに公開して、そこから実行する方法があります：
+
+```json
+{
+  "mcpServers": {
+    "hello_world": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "your-package-name"
+      ]
+    }
+  }
+}
+```
+
+他の方法としては、MCPサーバーをnpxで実行する方法がいくつかあります。最も柔軟な方法の一つは、ts-nodeを使用してTypeScriptファイルを直接実行する方法です：
+
+```json
+{
+  "mcpServers": {
+    "hello_world": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "ts-node",
+        "--esm",
+        "https://raw.githubusercontent.com/username/repo/main/index.ts"
+      ]
+    }
+  }
+}
+```
+
+この方法では、次の点に注意が必要です：
+1. TypeScriptファイルがESモジュール形式で記述されている必要がある
+2. `--esm` フラグを指定してts-nodeがESモジュールをサポートするようにする
+3. インポートパスは完全修飾パス（`@modelcontextprotocol/sdk/dist/esm/...`）を使用するとより確実
+4. 初回実行時にts-nodeと依存関係をダウンロードするため、時間がかかることがある
+
+
+### Q: ローカルのnpmパッケージからMCPサーバーを実行する方法は？
+A: プロジェクトをビルドしてから、以下のようにJSON設定を作成します：
+```json
+{
+  "mcpServers": {
+    "hello_world": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/dist/index.js"
+      ]
+    }
+  }
+}
+```
 
 ## 拡張と応用
 
