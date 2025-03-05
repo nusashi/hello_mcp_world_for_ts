@@ -1,0 +1,21 @@
+{
+    "name": "minimal-mcp-server",
+    "version": "1.0.0",
+    "description": "Minimal MCP server implementation",
+    "type": "module",
+    "main": "dist/index.js",
+    "bin": {
+        "minimal-mcp-server": "dist/index.js"
+    },
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/index.js"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.6.1"
+    },
+    "devDependencies": {
+        "@types/node": "^18.0.0",
+        "typescript": "^5.0.0"
+    }
+}
